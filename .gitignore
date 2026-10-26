@@ -41,3 +41,11 @@ example
 # generated native folders
 /ios
 /android
+
+# environment files (never commit secrets; see .env.example when added)
+.env
+.env.*
+!.env.example
+
+# test output
+coverage/

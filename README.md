@@ -1,56 +1,71 @@
-# Welcome to your Expo app 👋
+# Inked
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Smart note-taking app focused on OCR: scan a page, proofread the transcription, file it, read it, and synthesise it.
 
-## Get started
+**Status: Milestone M0 (foundation) built; on-device verification pending.** The app shell, design tokens and tooling exist. There is no scanning, OCR, accounts or backend yet. See [Roadmap](#roadmap).
 
-1. Install dependencies
+## Stack
 
-   ```bash
-   npm install
-   ```
+- Expo SDK 58, React Native 0.88, Expo Router (typed routes), TypeScript (strict)
+- Jest + React Native Testing Library, ESLint, Prettier
+- Planned: Supabase (auth, Postgres with RLS, storage, edge functions), on-device OCR, local SQLite
 
-2. Start the app
+## Setup
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Requirements: Node 22 (`.nvmrc`), npm, Android Studio (Android SDK + emulator or a USB-debugging phone).
 
 ```bash
-npm run reset-project
+npm install
+npm run check        # lint + typecheck + format check + tests (run before every commit)
+npx expo start       # dev server
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+### Running on Android (Windows-friendly)
 
-### Other setup steps
+The app will use native modules (camera, OCR, biometrics), so it will need a **development build**, not Expo Go.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- **Local build (free):** install Android Studio and a JDK, then `npx expo run:android`. This works on Windows.
+- **Cloud build:** `npx eas-cli@latest build --profile development --platform android`. EAS free-tier build limits apply; check current limits on expo.dev before relying on it.
 
-## Learn more
+iOS builds need a paid Apple Developer account and cannot be built locally on Windows (EAS cloud builds can). iOS is deferred; the code is written to remain iOS-compatible.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Scripts
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Script              | Purpose                                |
+| ------------------- | -------------------------------------- |
+| `npm run lint`      | ESLint (expo config + prettier compat) |
+| `npm run typecheck` | `tsc --noEmit`                         |
+| `npm run format`    | Prettier write                         |
+| `npm run test`      | Jest                                   |
+| `npm run test:ci`   | Jest with coverage                     |
+| `npm run check`     | All of the above checks                |
 
-## Join the community
+## Project structure
 
-Join our community of developers creating universal apps.
+```
+src/
+  app/            Expo Router routes only. Files here must stay thin re-exports (every file is a route).
+  features/       One folder per feature; screens, hooks, services live together.
+  components/     ui/ (primitives) and layout/ (screen scaffolding).
+  theme/          Design tokens (colour, spacing, type scale, sizes).
+  test/           Test-only helpers and global Jest setup.
+docs/             Decisions and release notes.
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Rules: never put tests or helpers in `src/app/`; add a folder only when it has a file in it.
+
+## Before first release (must do)
+
+- [ ] Replace the placeholder bundle/package id `com.inked.app` in `app.json` with an id you own. It is **permanent** once uploaded to Play.
+- [ ] Replace the placeholder Expo icon and splash images in `assets/images/`.
+- [ ] Privacy policy, Play Data Safety form, account deletion flow (arrive with the backend milestones).
+
+## Known limitations (M0)
+
+- Screens are honest empty states; no feature is wired to real data yet.
+- Not yet verified on a physical device or emulator (only unit/component tests and a production Android bundle export in a headless environment). Checklist: [docs/DEVICE_CHECKLIST.md](docs/DEVICE_CHECKLIST.md).
+- `npm audit` reports advisories inside `@expo/cli` (dev tooling, not shipped in the app). See [docs/DECISIONS.md](docs/DECISIONS.md#adr-008).
+
+## Roadmap
+
+M0 Foundation (built, device check pending) · M1 OCR/PDF spikes · M2 Backend + auth · M3 Local data + sync · M4 Capture · M5 OCR + editor · M6 Library/filing/search · M7 Reader + sticky · M8 AI synthesis · M9 Export · M10 Hardening + release. Full plan: `INKED_DISCOVERY_PLAN.md` in the project.
