@@ -85,7 +85,7 @@ Rules: never put tests or helpers in `src/app/`; add a folder only when it has a
 - No password reset, Google sign-in or biometric app lock yet (see ADR-014). Password reset must be built before launch.
 - Supabase's built-in email sender is heavily rate-limited; use a custom SMTP provider before real users sign up.
 - Not yet verified on a physical device or emulator (only unit/component tests and a production Android bundle export in a headless environment). Checklist: [docs/DEVICE_CHECKLIST.md](docs/DEVICE_CHECKLIST.md).
-- The RLS test file was written and reviewed but not yet run against the live project from CI; run it after any schema change.
+- The RLS tests (17 checks) passed against the live `inked` project on 2026-10-31. They are run by hand, not in CI; re-run them after any schema change.
 - `npm audit` reports advisories inside `@expo/cli` (dev tooling, not shipped in the app). See [docs/DECISIONS.md](docs/DECISIONS.md#adr-008).
 
 ## Roadmap
