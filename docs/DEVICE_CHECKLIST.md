@@ -1,4 +1,4 @@
-# M0 on-device verification checklist
+# On-device verification checklist (M0 and M2)
 
 These could not be verified in the headless build environment. Run on an Android emulator or phone (`npx expo run:android`) and tick each item.
 
@@ -12,3 +12,16 @@ These could not be verified in the headless build environment. Run on an Android
 - [ ] System font size set to the largest: titles and buttons stay readable and nothing is cut off.
 - [ ] TalkBack: each tab is announced with its label; screen titles are announced as headings; the "Scan a page" button is announced as a button.
 - [ ] Rotate / split-screen does not crash (orientation is locked to portrait).
+
+## M2: accounts (needs a real `.env`)
+
+- [ ] Fresh install shows **Sign In** (not the tabs). No white flash; splash hides once.
+- [ ] Create Account with a new email: either lands in the app (confirmation off) or shows the "confirm your email" notice and returns to Sign In (confirmation on). Confirm the real email arrives.
+- [ ] Wrong password shows "The email or password is incorrect." Airplane mode shows the network message.
+- [ ] Keyboard never covers the focused field or the submit button on a small phone; "next" moves name, email, password; "done" submits.
+- [ ] Password show/hide works; strength meter text changes as you type.
+- [ ] Kill and reopen the app: still signed in. Hardware back from the tabs does not return to Sign In.
+- [ ] Person button (top right of each tab) opens Profile with initials, name, email and "Free plan". Back returns to the same tab.
+- [ ] Sign out returns to Sign In; reopening stays signed out.
+- [ ] Delete account: Cancel does nothing; confirming returns to Sign In, and signing in with that account fails. Check in the Supabase dashboard that the user and profile rows are gone.
+- [ ] TalkBack: errors are announced when they appear; the form fields are announced with their labels.

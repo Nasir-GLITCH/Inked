@@ -41,3 +41,38 @@ Expo Router treats every file under `src/app/` as a route and bundles it. A test
 ## ADR-010 — Icon imports
 
 Import icons from the family path (`@expo/vector-icons/MaterialIcons`), not the package root. The root import bundled every icon font and roughly doubled the export size (8.3 MB vs 4.3 MB measured).
+
+## ADR-011 — Account deletion lives in an edge function
+
+Deleting an auth user needs the Supabase secret key, which must never ship in the app. The `delete-account` edge function (`verify_jwt = true`) re-validates the caller's token and deletes only that user; the id is never read from the request body. `public.profiles` is removed by `ON DELETE CASCADE`. **Whenever a table or storage bucket with user data is added, this function must also delete that data** (cascade it, or delete it explicitly) and a test must prove it. Play Store and App Store both require in-app account deletion.
+
+## ADR-012 — Entitlements are server-controlled
+
+`profiles.plan` (`free` | `pro`) is readable by the user but writable only with the server-side key (column-level grant: clients can update `display_name` only). The app maps any unknown value to `free`. Feature gating must go through one helper (to be added with the first gated feature), and sensitive limits (such as the AI daily quota) are enforced on the server, never only in the app.
+
+## ADR-013 — Session handling and route guards
+
+- The session is stored encrypted: an AES key in the device keystore (`expo-secure-store`), the encrypted session in AsyncStorage (SecureStore alone cannot hold a full session). Tokens refresh only while the app is in the foreground.
+- Navigation uses `Stack.Protected` driven by auth state. Guards only choose which screens the user sees; **access to data is enforced by RLS**, never by the guards.
+- Auth failures are mapped to a small set of safe messages. Raw server messages are never shown, and passwords, tokens and emails are never logged.
+- `EXPO_PUBLIC_*` values are bundled into the app and public. Only the Supabase URL and the **publishable** key belong there.
+
+## ADR-014 — Auth screen deviations from the supplied designs (pending owner approval)
+
+The Sign In and Create Account designs contain items that are false for this product or not buildable yet. They are **omitted or reworded in code but not yet approved by the owner**:
+
+| Design element                                                    | Built as                             | Reason                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| "Master Key (Password)", "End-to-End Encrypted", "AES-256" labels | "Password" with no encryption claims | ADR-002: no E2EE, claims would be false                                    |
+| "Local On-Device OCR · Zero Cloud" toggle                         | Omitted                              | Images will sync to cloud storage; claim would be false                    |
+| "Daily E-Paper Digest" toggle                                     | Omitted                              | E-paper / Kindle features were dropped                                     |
+| Apple ID button                                                   | Omitted                              | Android first (ADR-003)                                                    |
+| Google button                                                     | Omitted                              | Needs Google OAuth set up in Google Cloud and Supabase first               |
+| "Forgot password?" link                                           | Omitted                              | Needs an email-link and deep-link flow; must be built before launch        |
+| "Unlock with Face ID" card                                        | Omitted                              | Belongs to the app-lock feature, not built yet                             |
+| Top bar with back arrow and person icon on the auth screens       | Omitted                              | Nothing to go back to; the person icon had no destination while signed out |
+| "AI SYNTHESIS" chip and ring on the logo                          | Omitted                              | Decoration; real logo asset not supplied yet (placeholder icon used)       |
+| Footer "Inkslate Technical Protocol v3.4.1"                       | "Inked v<app version>"               | Name decision (ADR-001)                                                    |
+| Privacy/terms line only on Sign In                                | Shown on both screens                | Consent is needed at sign-up                                               |
+
+Profile screen: only the identity header, Sign out and Delete account are built so far. Delete account is not in the design but is required by the stores. Stats, storage meter, OCR engine and preference rows wait for the features that feed them.

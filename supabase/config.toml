@@ -1,0 +1,5 @@
+# Per-function settings for the Supabase CLI. Only non-default behaviour is listed.
+
+[functions.delete-account]
+# The platform rejects requests without a valid user JWT before our code runs.
+verify_jwt = true

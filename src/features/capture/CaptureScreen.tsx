@@ -1,9 +1,13 @@
 import { Screen } from '@/components/layout/Screen';
+import { ProfileButton } from '@/features/profile/ProfileButton';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export function CaptureScreen() {
   return (
-    <Screen title="Capture" subtitle="Scan pages and extract their text">
+    <Screen
+      title="Capture"
+      subtitle="Scan pages and extract their text"
+      headerRight={<ProfileButton />}>
       <EmptyState
         icon="document-scanner"
         title="Scanning is not available yet"

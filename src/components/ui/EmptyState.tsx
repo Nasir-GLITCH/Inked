@@ -1,13 +1,12 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { Text } from '@/components/ui/Text';
-import { colors, sizes, spacing } from '@/theme';
+import { sizes, spacing } from '@/theme';
 
 export type EmptyStateProps = {
-  icon: ComponentProps<typeof MaterialIcons>['name'];
+  icon: IconName;
   title: string;
   message: string;
   action?: { label: string; onPress: () => void };
@@ -16,13 +15,7 @@ export type EmptyStateProps = {
 export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
     <View style={styles.container} accessibilityRole="summary">
-      <MaterialIcons
-        name={icon}
-        size={sizes.iconLg * 1.5}
-        color={colors.textMuted}
-        accessible={false}
-        importantForAccessibility="no"
-      />
+      <Icon name={icon} size={sizes.iconLg * 1.5} color="textMuted" />
       <Text variant="heading" style={styles.centered}>
         {title}
       </Text>

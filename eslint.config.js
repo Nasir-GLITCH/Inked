@@ -3,7 +3,7 @@ const expoConfig = require('eslint-config-expo/flat');
 const prettierConfig = require('eslint-config-prettier/flat');
 
 module.exports = defineConfig([
-  globalIgnores(['dist/*', 'coverage/*', '.expo/*', 'node_modules/*']),
+  globalIgnores(['dist/*', 'coverage/*', '.expo/*', 'node_modules/*', 'supabase/functions/*']),
   expoConfig,
   prettierConfig,
   {
