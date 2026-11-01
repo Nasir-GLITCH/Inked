@@ -76,3 +76,12 @@ The Sign In and Create Account designs contain items that are false for this pro
 | Privacy/terms line only on Sign In                                | Shown on both screens                | Consent is needed at sign-up                                               |
 
 Profile screen: only the identity header, Sign out and Delete account are built so far. Delete account is not in the design but is required by the stores. Stats, storage meter, OCR engine and preference rows wait for the features that feed them.
+
+## ADR-015 — OCR approach and page scanner
+
+- **Recognition:** Google ML Kit text recognition (Latin script, bundled model, fully offline, free) through a small local Expo module, `modules/inked-ocr` (Android only for now). Existing React Native wrappers do not return confidence scores, which the Transcription Editor needs to mark uncertain words, so the module returns text, line and word frames, line angle and per-line/per-word confidence. The native result is treated as untrusted and validated with zod in `src/features/ocr/recognitionSchema.ts`.
+- **Scanning:** Google's ML Kit Document Scanner through `react-native-document-scanner-plugin` (pinned at 2.0.4). It gives automatic edge detection, deskew and cleanup without building a camera screen yet. The custom camera screen from the design comes later.
+- **Known limits of the scanner plugin:** no import from the gallery; requires Google Play services; version 2.0.4 can leave the promise unresolved if the scanner returns an unexpected result code. Any of these may push us to a custom camera sooner.
+- **Handwriting:** ML Kit's Latin model is built for printed text. Handwriting accuracy is exactly what the OCR lab (dev-only) is for measuring on the owner's real pages before any more is built on top. If it is poor, the options are a cloud model for handwriting (cost and privacy trade-offs to be decided with the owner).
+- **Confidence:** a page's score is the average of its line scores weighted by character count; lines under 70% are flagged "Check". These numbers are ML Kit's own estimates, not measured accuracy.
+- **Unverified:** the Kotlin module has not been compiled; the build environment has no Android SDK. First build on the owner's machine is the first real test.

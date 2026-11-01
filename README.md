@@ -79,8 +79,13 @@ Rules: never put tests or helpers in `src/app/`; add a folder only when it has a
 - [ ] Replace the placeholder Expo icon and splash images in `assets/images/`.
 - [ ] Privacy policy, Play Data Safety form, account deletion flow (arrive with the backend milestones).
 
+## OCR lab (development only)
+
+The Capture tab shows an **Open OCR lab** button in development builds. It scans pages with Google's document scanner and reports on-device text recognition speed and confidence. It needs a native rebuild (`npx expo run:android`); it does not work in Expo Go. See ADR-015 and `docs/DEVICE_CHECKLIST.md`.
+
 ## Known limitations
 
+- The OCR native module (`modules/inked-ocr`) and scanner plugin are unit-tested only through mocks; the Kotlin code has not been compiled or run yet.
 - Notes, Capture, Sticky and Library are honest empty states; only accounts are wired to the backend.
 - No password reset, Google sign-in or biometric app lock yet (see ADR-014). Password reset must be built before launch.
 - Supabase's built-in email sender is heavily rate-limited; use a custom SMTP provider before real users sign up.

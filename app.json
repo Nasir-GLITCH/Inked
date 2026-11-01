@@ -31,6 +31,12 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "react-native-document-scanner-plugin",
+        {
+          "cameraPermission": "Inked uses the camera to scan your pages."
+        }
       ]
     ],
     "experiments": {

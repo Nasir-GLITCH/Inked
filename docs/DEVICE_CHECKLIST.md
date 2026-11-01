@@ -25,3 +25,25 @@ These could not be verified in the headless build environment. Run on an Android
 - [ ] Sign out returns to Sign In; reopening stays signed out.
 - [ ] Delete account: Cancel does nothing; confirming returns to Sign In, and signing in with that account fails. Check in the Supabase dashboard that the user and profile rows are gone.
 - [ ] TalkBack: errors are announced when they appear; the form fields are announced with their labels.
+
+## M1: OCR lab (dev builds only; native code, so a rebuild is required)
+
+Rebuild the native app (new native module and scanner plugin):
+
+```
+npm install
+npx expo prebuild --clean --platform android
+npx expo run:android
+```
+
+If the build fails, copy the first red error from the terminal (usually the `Execution failed for task` block) and send it back. The Kotlin module has never been compiled.
+
+- [ ] App builds and launches; sign-in still works.
+- [ ] Capture tab shows an **Open OCR lab (dev only)** button (it must not exist in a release build).
+- [ ] **Scan pages** opens Google's scanner (needs Google Play services). Scan 1 to 5 pages.
+- [ ] Cancelling the scanner returns to the lab with nothing broken. Tapping Scan repeatedly never starts two runs.
+- [ ] Each page shows its thumbnail, time in ms, word count, overall confidence and every line with its own percentage.
+- [ ] Lines under 70% show a warning icon and the word "Check".
+- [ ] Try: a printed page, a neat handwritten page, a messy handwritten page, a whiteboard, a page in dim light. Note the confidence and how wrong the text really is.
+- [ ] **Share results** sends a text report. Please send me the reports plus your honest verdict on how accurate the text was.
+- [ ] Airplane mode: recognition still works (it is offline).
