@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { scanFailureMessage, scanPages } from '@/features/capture/documentScanner';
+import { scanFailureMessage, scanPages, type ScanResult } from '@/features/capture/documentScanner';
+import { pickImages } from '@/features/capture/imageImport';
 
 import type { LabPage } from './labTypes';
 import { recognizeText } from './ocrService';
@@ -28,43 +29,49 @@ export function useOcrLab() {
     setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
   }, []);
 
-  const scanAndRecognize = useCallback(async () => {
-    if (busyRef.current) return; // ignore repeated taps while a run is in progress
-    busyRef.current = true;
-    setBusy(true);
-    setNotice(null);
-    try {
-      const scan = await scanPages();
-      if (!mountedRef.current) return;
-      if (scan.status === 'cancelled') return;
-      if (scan.status === 'error') {
-        setNotice(scanFailureMessage(scan.code));
-        return;
-      }
-
-      const batch: LabPage[] = scan.imageUris.map((uri, index) => ({
-        id: `${Date.now()}-${index}`,
-        uri,
-        status: 'queued',
-      }));
-      setPages(batch);
-
-      for (const page of batch) {
+  const run = useCallback(
+    async (source: () => Promise<ScanResult>) => {
+      if (busyRef.current) return; // ignore repeated taps while a run is in progress
+      busyRef.current = true;
+      setBusy(true);
+      setNotice(null);
+      try {
+        const scan = await source();
         if (!mountedRef.current) return;
-        updatePage(page.id, { status: 'running' });
-        const result = await recognizeText(page.uri);
-        updatePage(
-          page.id,
-          result.ok
-            ? { status: 'done', recognition: result.recognition }
-            : { status: 'failed', failureCode: result.code },
-        );
-      }
-    } finally {
-      busyRef.current = false;
-      if (mountedRef.current) setBusy(false);
-    }
-  }, [updatePage]);
+        if (scan.status === 'cancelled') return;
+        if (scan.status === 'error') {
+          setNotice(scanFailureMessage(scan.code));
+          return;
+        }
 
-  return { pages, busy, notice, scanAndRecognize };
+        const batch: LabPage[] = scan.imageUris.map((uri, index) => ({
+          id: `${Date.now()}-${index}`,
+          uri,
+          status: 'queued',
+        }));
+        setPages(batch);
+
+        for (const page of batch) {
+          if (!mountedRef.current) return;
+          updatePage(page.id, { status: 'running' });
+          const result = await recognizeText(page.uri);
+          updatePage(
+            page.id,
+            result.ok
+              ? { status: 'done', recognition: result.recognition }
+              : { status: 'failed', failureCode: result.code },
+          );
+        }
+      } finally {
+        busyRef.current = false;
+        if (mountedRef.current) setBusy(false);
+      }
+    },
+    [updatePage],
+  );
+
+  const scanAndRecognize = useCallback(() => run(scanPages), [run]);
+  const importAndRecognize = useCallback(() => run(pickImages), [run]);
+
+  return { pages, busy, notice, scanAndRecognize, importAndRecognize };
 }

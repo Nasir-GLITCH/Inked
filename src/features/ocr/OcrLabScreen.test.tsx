@@ -6,12 +6,16 @@ import { makeRecognition } from './fixtures';
 
 const mockScanPages = jest.fn();
 const mockRecognizeText = jest.fn();
+const mockPickImages = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('@/features/capture/documentScanner', () => ({
   scanPages: () => mockScanPages(),
   scanFailureMessage: () => 'The page scanner is not available in this build of the app.',
+}));
+jest.mock('@/features/capture/imageImport', () => ({
+  pickImages: () => mockPickImages(),
 }));
 jest.mock('./ocrService', () => ({
   ...jest.requireActual('./ocrService'),
@@ -22,6 +26,7 @@ describe('OcrLabScreen', () => {
   beforeEach(() => {
     mockScanPages.mockReset();
     mockRecognizeText.mockReset();
+    mockPickImages.mockReset();
   });
 
   it('scans, reads each page and shows time, words and per-line confidence', async () => {
@@ -92,5 +97,21 @@ describe('OcrLabScreen', () => {
     await user.press(await screen.findByRole('button', { name: 'Share results' }));
 
     expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('(90%) Hello') });
+  });
+
+  it('reads photos imported from the gallery', async () => {
+    mockPickImages.mockResolvedValue({ status: 'success', imageUris: ['file:///photo.jpg'] });
+    mockRecognizeText.mockResolvedValue({
+      ok: true,
+      recognition: makeRecognition([{ text: 'From gallery', confidence: 0.9 }]),
+    });
+    const user = userEvent.setup();
+    await render(<OcrLabScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Import from gallery' }));
+
+    expect(await screen.findByText('From gallery')).toBeOnTheScreen();
+    expect(mockRecognizeText).toHaveBeenCalledWith('file:///photo.jpg');
+    expect(mockScanPages).not.toHaveBeenCalled();
   });
 });

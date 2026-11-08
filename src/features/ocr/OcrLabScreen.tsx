@@ -21,7 +21,7 @@ import { useOcrLab } from './useOcrLab';
  */
 export function OcrLabScreen() {
   const router = useRouter();
-  const { pages, busy, notice, scanAndRecognize } = useOcrLab();
+  const { pages, busy, notice, scanAndRecognize, importAndRecognize } = useOcrLab();
 
   useEffect(() => {
     if (!__DEV__) router.replace('/');
@@ -39,6 +39,13 @@ export function OcrLabScreen() {
           label={pages.length > 0 ? 'Scan again' : 'Scan pages'}
           leadingIcon="document-scanner"
           onPress={scanAndRecognize}
+          loading={busy}
+        />
+        <Button
+          label="Import from gallery"
+          variant="secondary"
+          leadingIcon="photo-library"
+          onPress={importAndRecognize}
           loading={busy}
         />
         {notice ? (

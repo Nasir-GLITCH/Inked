@@ -47,3 +47,10 @@ If the build fails, copy the first red error from the terminal (usually the `Exe
 - [ ] Try: a printed page, a neat handwritten page, a messy handwritten page, a whiteboard, a page in dim light. Note the confidence and how wrong the text really is.
 - [ ] **Share results** sends a text report. Please send me the reports plus your honest verdict on how accurate the text was.
 - [ ] Airplane mode: recognition still works (it is offline).
+
+### No camera on the emulator? (OCR lab alternatives)
+
+- **Import from gallery** in the OCR lab reads any photo already on the device. On the emulator, drag a photo file from Windows onto the emulator window; it is saved to Downloads and appears in the picker. Needs a native rebuild (`npx expo run:android`) because `expo-image-picker` is a new native module.
+- **Real phone:** enable USB debugging on the phone, plug it in, run `adb devices` to confirm it is listed, then `npx expo run:android --device`. Handwriting results from a real camera are the most useful test.
+- **Emulator camera (scanner only):** the AVD must use a Google Play system image. In AVD settings, Advanced, set Back camera to VirtualScene. The scan then points at a virtual room, so it only proves the scanner opens, not OCR quality.
+- [ ] Import from gallery: pick 1 to 5 photos; each is read and shown like a scanned page.
