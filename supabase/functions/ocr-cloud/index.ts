@@ -14,10 +14,12 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 // base64 text length cap, about 7.5 MB of image data.
 const MAX_BASE64_LENGTH = 10_000_000;
-const UPSTREAM_TIMEOUT_MS = 50_000;
+const UPSTREAM_TIMEOUT_MS = 30_000;
+const MAX_ATTEMPTS_PER_MODEL = 2;
 // Strongest Flash model, for a fair handwriting test. Override with the GEMINI_MODEL secret
 // (for example gemini-3.1-flash-lite, cheaper) without redeploying.
 const DEFAULT_MODEL = 'gemini-3.8-flash';
+const FALLBACK_MODEL = 'gemini-3.1-flash-lite';
 
 const PROMPT =
   'Transcribe all text in this image exactly as written, including handwriting. ' +
@@ -28,6 +30,30 @@ const PROMPT =
 
 function json(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+}
+
+function callGemini(
+  model: string,
+  apiKey: string,
+  mimeType: string,
+  imageBase64: string,
+): Promise<Response> {
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: 'POST',
+      headers: { ...JSON_HEADERS, 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: PROMPT }, { inline_data: { mime_type: mimeType, data: imageBase64 } }],
+          },
+        ],
+        generationConfig: { temperature: 0 },
+      }),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    },
+  );
 }
 
 type GeminiResponse = {
@@ -63,39 +89,44 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error('ocr-cloud: GEMINI_API_KEY is not set');
     return json(500, { error: 'server_misconfigured' });
   }
-  const model = Deno.env.get('GEMINI_MODEL') ?? DEFAULT_MODEL;
+  const primaryModel = Deno.env.get('GEMINI_MODEL') ?? DEFAULT_MODEL;
+  const models = primaryModel === FALLBACK_MODEL ? [primaryModel] : [primaryModel, FALLBACK_MODEL];
 
   const startedAt = Date.now();
-  let upstream: Response;
-  try {
-    upstream = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: 'POST',
-        headers: { ...JSON_HEADERS, 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: PROMPT },
-                { inline_data: { mime_type: mimeType, data: imageBase64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0 },
-        }),
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      },
-    );
-  } catch (error) {
-    console.error('ocr-cloud: upstream request failed', (error as Error).name);
-    return json(504, { error: 'upstream_timeout' });
+  let upstream: Response | undefined;
+  let model = primaryModel;
+  let lastFailure: 'busy' | 'timeout' | 'rate_limited' | 'error' = 'error';
+
+  // New models are often overloaded (503). Try each model, retrying transient failures
+  // once, then fall back to the stable model. The model actually used is returned.
+  outer: for (const candidate of models) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt++) {
+      try {
+        const response = await callGemini(candidate, apiKey, mimeType, imageBase64);
+        if (response.ok) {
+          upstream = response;
+          model = candidate;
+          break outer;
+        }
+        // Log the status only: the response body can echo request details.
+        console.error('ocr-cloud: upstream returned', response.status, 'for model', candidate);
+        if (response.status === 429) {
+          lastFailure = 'rate_limited';
+          break; // retrying the same model will not help; try the fallback
+        }
+        lastFailure = response.status === 503 || response.status === 500 ? 'busy' : 'error';
+        if (lastFailure === 'error') break;
+      } catch (error) {
+        console.error('ocr-cloud: upstream request failed', (error as Error).name, candidate);
+        lastFailure = 'timeout';
+      }
+    }
   }
 
-  if (!upstream.ok) {
-    // Log the status only: the response body can echo request details.
-    console.error('ocr-cloud: upstream returned', upstream.status, 'for model', model);
-    if (upstream.status === 429) return json(429, { error: 'rate_limited' });
+  if (!upstream) {
+    if (lastFailure === 'rate_limited') return json(429, { error: 'rate_limited' });
+    if (lastFailure === 'busy') return json(503, { error: 'upstream_busy' });
+    if (lastFailure === 'timeout') return json(504, { error: 'upstream_timeout' });
     return json(502, { error: 'upstream_error' });
   }
 

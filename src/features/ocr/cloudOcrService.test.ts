@@ -90,6 +90,8 @@ describe('recognizeTextInCloud', () => {
   it.each([
     [429, 'rate_limited'],
     [413, 'image_too_large'],
+    [503, 'busy'],
+    [504, 'busy'],
     [500, 'unavailable'],
     [502, 'failed'],
   ] as const)('maps HTTP %i to %s', async (status, code) => {
@@ -122,6 +124,7 @@ describe('recognizeTextInCloud', () => {
       'image_too_large',
       'network',
       'rate_limited',
+      'busy',
       'unavailable',
       'failed',
     ];

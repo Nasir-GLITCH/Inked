@@ -5,7 +5,13 @@ import { z } from 'zod';
 import { getSupabase } from '@/services/supabase';
 
 export type CloudFailureCode =
-  'image_unreadable' | 'image_too_large' | 'network' | 'rate_limited' | 'unavailable' | 'failed';
+  | 'image_unreadable'
+  | 'image_too_large'
+  | 'network'
+  | 'rate_limited'
+  | 'busy'
+  | 'unavailable'
+  | 'failed';
 
 export type CloudOcrResult =
   | { ok: true; text: string; model: string; durationMs: number }
@@ -36,6 +42,7 @@ async function failureFromError(error: unknown): Promise<CloudFailureCode> {
     const status = error.context instanceof Response ? error.context.status : 0;
     if (status === 413) return 'image_too_large';
     if (status === 429) return 'rate_limited';
+    if (status === 503 || status === 504) return 'busy';
     if (status === 500 || status === 404) return 'unavailable';
   }
   return 'failed';
@@ -69,6 +76,7 @@ const FAILURE_MESSAGES: Record<CloudFailureCode, string> = {
   image_too_large: 'This image is too large to send. Try a smaller photo.',
   network: 'No connection. The cloud engine needs internet.',
   rate_limited: 'The cloud engine is busy or its free limit was reached. Try again later.',
+  busy: "Google's cloud engine is overloaded right now. Please try again in a minute.",
   unavailable: 'The cloud engine is not set up on the server yet.',
   failed: 'The cloud engine could not read this page.',
 };
