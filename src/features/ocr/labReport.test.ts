@@ -28,7 +28,31 @@ describe('formatLabReport', () => {
       { id: '2', uri: 'x', status: 'failed', failureCode: 'image_unreadable' },
       { id: '3', uri: 'y', status: 'queued' },
     ]);
-    expect(report).toContain('Failed: This image could not be opened.');
+    expect(report).toContain('On-device failed: This image could not be opened.');
     expect(report).toContain('Not processed');
+  });
+
+  it('includes the cloud transcription for comparison', () => {
+    const report = formatLabReport([
+      {
+        ...donePage,
+        cloud: {
+          status: 'done',
+          text: 'Cloud line one\nCloud line two',
+          model: 'gemini-x',
+          durationMs: 700,
+        },
+      },
+    ]);
+    expect(report).toContain('ON-DEVICE (ML Kit)');
+    expect(report).toContain('CLOUD (gemini-x)');
+    expect(report).toContain('Cloud line two');
+  });
+
+  it('reports a cloud failure', () => {
+    const report = formatLabReport([
+      { ...donePage, cloud: { status: 'failed', failureCode: 'network' } },
+    ]);
+    expect(report).toContain('CLOUD failed: No connection');
   });
 });

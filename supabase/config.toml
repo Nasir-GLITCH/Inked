@@ -3,3 +3,7 @@
 [functions.delete-account]
 # The platform rejects requests without a valid user JWT before our code runs.
 verify_jwt = true
+
+[functions.ocr-cloud]
+# Only signed-in users may call it; the Gemini key stays in function secrets.
+verify_jwt = true

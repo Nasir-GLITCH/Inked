@@ -4,6 +4,7 @@ import { scanFailureMessage, scanPages, type ScanResult } from '@/features/captu
 import { pickImages } from '@/features/capture/imageImport';
 
 import type { LabPage } from './labTypes';
+import { recognizeTextInCloud } from './cloudOcrService';
 import { recognizeText } from './ocrService';
 
 /**
@@ -61,6 +62,20 @@ export function useOcrLab() {
               ? { status: 'done', recognition: result.recognition }
               : { status: 'failed', failureCode: result.code },
           );
+
+          // Same page through the cloud engine, so the two can be compared side by side.
+          updatePage(page.id, { cloud: { status: 'running' } });
+          const cloud = await recognizeTextInCloud(page.uri);
+          updatePage(page.id, {
+            cloud: cloud.ok
+              ? {
+                  status: 'done',
+                  text: cloud.text,
+                  model: cloud.model,
+                  durationMs: cloud.durationMs,
+                }
+              : { status: 'failed', failureCode: cloud.code },
+          });
         }
       } finally {
         busyRef.current = false;

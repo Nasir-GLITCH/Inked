@@ -54,3 +54,17 @@ If the build fails, copy the first red error from the terminal (usually the `Exe
 - **Real phone:** enable USB debugging on the phone, plug it in, run `adb devices` to confirm it is listed, then `npx expo run:android --device`. Handwriting results from a real camera are the most useful test.
 - **Emulator camera (scanner only):** the AVD must use a Google Play system image. In AVD settings, Advanced, set Back camera to VirtualScene. The scan then points at a virtual room, so it only proves the scanner opens, not OCR quality.
 - [ ] Import from gallery: pick 1 to 5 photos; each is read and shown like a scanned page.
+
+## M1: cloud OCR comparison (needs a Gemini key stored as a server secret)
+
+One-time setup, done by the owner (never paste the key into chat or into the app):
+
+1. Create a free key at https://aistudio.google.com (Google account, no card).
+2. Supabase dashboard, project **inked**, Edge Functions, Secrets: add `GEMINI_API_KEY` with the key. Optional: `GEMINI_MODEL` (for example `gemini-3.1-flash-lite`) to try a cheaper model.
+3. `git pull`, then `npx expo start`. This change is JavaScript only, so no native rebuild is needed.
+
+- [ ] In the OCR lab, import or scan a page. The on-device result appears first, then a **Cloud** section under it with the model name, time, word count and full text.
+- [ ] Without the secret the cloud section says the engine is not set up on the server (expected).
+- [ ] Test **only non-sensitive pages**: the free tier may let Google use them to improve its products.
+- [ ] Test the same pages both ways: gallery import (raw photo) and the scanner. Try printed, neat handwriting, messy handwriting.
+- [ ] **Share results** includes both engines. Send me the report and your verdict: which was more accurate, and was the cloud wait acceptable?

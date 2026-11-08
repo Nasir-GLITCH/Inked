@@ -85,3 +85,12 @@ Profile screen: only the identity header, Sign out and Delete account are built 
 - **Handwriting:** ML Kit's Latin model is built for printed text. Handwriting accuracy is exactly what the OCR lab (dev-only) is for measuring on the owner's real pages before any more is built on top. If it is poor, the options are a cloud model for handwriting (cost and privacy trade-offs to be decided with the owner).
 - **Confidence:** a page's score is the average of its line scores weighted by character count; lines under 70% are flagged "Check". These numbers are ML Kit's own estimates, not measured accuracy.
 - **Unverified:** the Kotlin module has not been compiled; the build environment has no Android SDK. First build on the owner's machine is the first real test.
+
+## ADR-016 — Cloud OCR evaluation (Gemini via an edge function)
+
+- **Why:** the on-device engine (ADR-015) scored 66% on a photographed handwritten form. Printed and handwritten pages are both in scope, so a cloud engine is evaluated side by side before any engine is chosen.
+- **How:** the OCR lab sends each page to the `ocr-cloud` edge function, which calls Google's Gemini API (`generateContent`, model `gemini-3.8-flash`, override with the `GEMINI_MODEL` secret). The key lives only in the function secret `GEMINI_API_KEY`; the function requires a signed-in user (`verify_jwt`). The app never sees the key.
+- **Privacy:** page images leave the device and go to Google. On the free tier Google may use submitted content to improve its products, so **only non-sensitive pages should be tested**. This conflicts with any "your notes never leave your device" claim, so no such claim may be made in the app until the final engine is chosen.
+- **Evaluation endpoint only:** no per-user quota, rate limiting or cost cap. These must exist before any public release (ADR-012: limits are enforced on the server).
+- **No confidence from the cloud engine:** it returns plain text. The Transcription Editor's per-word uncertainty marking would need another approach (for example the on-device scores as a hint, or Google Cloud Vision, which returns confidence).
+- **Open:** engine choice and the cost/privacy trade-off, pending the owner's side-by-side results.

@@ -12,6 +12,7 @@ import { colors, radii, spacing } from '@/theme';
 import { aggregateConfidence, countWords, formatConfidence, isLowConfidence } from './confidence';
 import { formatLabReport } from './labReport';
 import type { LabPage } from './labTypes';
+import { cloudFailureMessage } from './cloudOcrService';
 import { ocrFailureMessage } from './ocrService';
 import { useOcrLab } from './useOcrLab';
 
@@ -30,7 +31,12 @@ export function OcrLabScreen() {
   if (!__DEV__) return null;
 
   const finished =
-    pages.length > 0 && pages.every((p) => p.status === 'done' || p.status === 'failed');
+    pages.length > 0 &&
+    pages.every(
+      (p) =>
+        (p.status === 'done' || p.status === 'failed') &&
+        (p.cloud?.status === 'done' || p.cloud?.status === 'failed'),
+    );
 
   return (
     <Screen title="OCR lab" subtitle="Developer tool: scan pages and check text recognition">
@@ -112,6 +118,12 @@ function PageResult({ page, number }: { page: LabPage; number: number }) {
         </View>
       </View>
 
+      {recognition ? (
+        <Text variant="overline" color="textSecondary">
+          On-device (ML Kit)
+        </Text>
+      ) : null}
+
       {recognition && lines.length === 0 ? (
         <Text color="textSecondary">No text was found on this page.</Text>
       ) : null}
@@ -134,6 +146,38 @@ function PageResult({ page, number }: { page: LabPage; number: number }) {
           </View>
         );
       })}
+
+      <CloudResult cloud={page.cloud} />
+    </View>
+  );
+}
+
+function CloudResult({ cloud }: { cloud: LabPage['cloud'] }) {
+  if (!cloud) return null;
+  return (
+    <View style={styles.cloud}>
+      <Text variant="overline" color="textSecondary">
+        {cloud.status === 'done' ? `Cloud (${cloud.model})` : 'Cloud'}
+      </Text>
+      {cloud.status === 'running' ? (
+        <View style={styles.row}>
+          <ActivityIndicator color={colors.text} />
+          <Text color="textSecondary">Reading with cloud engine…</Text>
+        </View>
+      ) : null}
+      {cloud.status === 'failed' ? (
+        <Text color="danger">{cloudFailureMessage(cloud.failureCode)}</Text>
+      ) : null}
+      {cloud.status === 'done' ? (
+        <>
+          <Text variant="bodySmall" color="textSecondary">
+            {`${cloud.durationMs} ms · ${countWords(cloud.text)} words`}
+          </Text>
+          <Text selectable>
+            {cloud.text === '' ? 'No text was found on this page.' : cloud.text}
+          </Text>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -156,6 +200,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceInput,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cloud: {
+    gap: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+  },
   line: { gap: spacing.xxs },
   badge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   lineText: { color: colors.text },

@@ -7,6 +7,7 @@ import { makeRecognition } from './fixtures';
 const mockScanPages = jest.fn();
 const mockRecognizeText = jest.fn();
 const mockPickImages = jest.fn();
+const mockCloud = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: () => null }));
@@ -16,6 +17,10 @@ jest.mock('@/features/capture/documentScanner', () => ({
 }));
 jest.mock('@/features/capture/imageImport', () => ({
   pickImages: () => mockPickImages(),
+}));
+jest.mock('./cloudOcrService', () => ({
+  ...jest.requireActual('./cloudOcrService'),
+  recognizeTextInCloud: (uri: string) => mockCloud(uri),
 }));
 jest.mock('./ocrService', () => ({
   ...jest.requireActual('./ocrService'),
@@ -27,6 +32,12 @@ describe('OcrLabScreen', () => {
     mockScanPages.mockReset();
     mockRecognizeText.mockReset();
     mockPickImages.mockReset();
+    mockCloud.mockReset().mockResolvedValue({
+      ok: true,
+      text: 'Cloud text here',
+      model: 'gemini-x',
+      durationMs: 800,
+    });
   });
 
   it('scans, reads each page and shows time, words and per-line confidence', async () => {
@@ -113,5 +124,40 @@ describe('OcrLabScreen', () => {
     expect(await screen.findByText('From gallery')).toBeOnTheScreen();
     expect(mockRecognizeText).toHaveBeenCalledWith('file:///photo.jpg');
     expect(mockScanPages).not.toHaveBeenCalled();
+  });
+
+  it('shows the cloud result next to the on-device one', async () => {
+    mockScanPages.mockResolvedValue({ status: 'success', imageUris: ['file:///a.jpg'] });
+    mockRecognizeText.mockResolvedValue({
+      ok: true,
+      recognition: makeRecognition([{ text: 'Local text', confidence: 0.9 }]),
+    });
+    const user = userEvent.setup();
+    await render(<OcrLabScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Scan pages' }));
+
+    expect(await screen.findByText('Cloud text here')).toBeOnTheScreen();
+    expect(screen.getByText('Local text')).toBeOnTheScreen();
+    expect(screen.getByText('Cloud (gemini-x)')).toBeOnTheScreen();
+    expect(mockCloud).toHaveBeenCalledWith('file:///a.jpg');
+  });
+
+  it('shows a cloud failure without hiding the on-device result', async () => {
+    mockCloud.mockResolvedValue({ ok: false, code: 'unavailable' });
+    mockScanPages.mockResolvedValue({ status: 'success', imageUris: ['file:///a.jpg'] });
+    mockRecognizeText.mockResolvedValue({
+      ok: true,
+      recognition: makeRecognition([{ text: 'Local text', confidence: 0.9 }]),
+    });
+    const user = userEvent.setup();
+    await render(<OcrLabScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Scan pages' }));
+
+    expect(
+      await screen.findByText('The cloud engine is not set up on the server yet.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Local text')).toBeOnTheScreen();
   });
 });
