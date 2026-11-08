@@ -16,9 +16,11 @@ const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_BASE64_LENGTH = 10_000_000;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS_PER_MODEL = 2;
-// Strongest Flash model, for a fair handwriting test. Override with the GEMINI_MODEL secret
-// (for example gemini-3.1-flash-lite, cheaper) without redeploying.
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+// Default is the stable lite model: in testing, gemini-3.8-flash timed out on every request
+// (about 60 s of waiting) while this one answered in roughly 5 s with good accuracy.
+// Try another model by setting the GEMINI_MODEL secret, without redeploying; the function
+// falls back to the lite model if that one fails.
+const DEFAULT_MODEL = 'gemini-3.1-flash-lite';
 const FALLBACK_MODEL = 'gemini-3.1-flash-lite';
 
 const PROMPT =
