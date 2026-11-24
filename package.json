@@ -44,7 +44,6 @@
     "@types/better-sqlite3": "9.6.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.3.0",
-    "better-sqlite3": "13.0.3",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
     "eslint-config-prettier": "^10.1.8",
@@ -66,5 +65,8 @@
     "test:ci": "jest --ci --coverage",
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test:ci"
   },
-  "private": true
+  "private": true,
+  "optionalDependencies": {
+    "better-sqlite3": "13.0.3"
+  }
 }
