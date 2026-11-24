@@ -68,3 +68,23 @@ One-time setup, done by the owner (never paste the key into chat or into the app
 - [ ] Test **only non-sensitive pages**: the free tier may let Google use them to improve its products.
 - [ ] Test the same pages both ways: gallery import (raw photo) and the scanner. Try printed, neat handwriting, messy handwriting.
 - [ ] **Share results** includes both engines. Send me the report and your verdict: which was more accurate, and was the cloud wait acceptable?
+
+## M3 to M5: capture, edit, file, save (native rebuild required)
+
+New native modules (`expo-sqlite`, `expo-image-manipulator`, `expo-crypto`), so rebuild: `git pull`, `npm install`, `npx expo run:android`. None of this has been run on a device yet; only unit and component tests and an Android bundle export have passed.
+
+- [ ] App builds and launches; sign-in still works; Notes shows "No notes yet" on a fresh account.
+- [ ] Capture shows **Scan page** and **Import from gallery**. Import a photo (emulator: drag a photo onto the window first).
+- [ ] The Transcription Editor opens with the image; on-device text appears first, then "Improving the text with cloud reading…", then the cloud text replaces it and the badge reads **CLOUD TEXT**.
+- [ ] Edit the text while the cloud is still running: when cloud text arrives it is **offered** ("Use cloud text"), not applied.
+- [ ] Airplane mode: on-device text still appears; the cloud banner shows a failure with **Retry**; Retry works once back online.
+- [ ] **Image Overlay** shows the page with line boxes; low-confidence lines are dashed amber.
+- [ ] Fix Ligatures and Trim Spaces change the text; Clear empties it; Confirm is disabled with no text.
+- [ ] Back with edits asks before discarding.
+- [ ] Filing: Save is disabled until a category is chosen; creating a category inline selects it; a duplicate name shows a message; tags are added with "done" and removed by tapping; Pin works.
+- [ ] Save returns to **Notes** and the note appears at once (pinned notes on top); category chips show correct counts and filter the list.
+- [ ] Open a note: image, text, tags and index notes are shown; **Delete** asks first, removes it, and the list updates.
+- [ ] Force-stop and reopen: notes are still there. Sign out and in as another account: that account sees none of them.
+- [ ] Hardware back works at every step (Notes, Editor, Filing, Note).
+- [ ] TalkBack: category options announce name, count and checked state; badges and buttons have labels.
+- [ ] Largest system font: Filing and Editor stay usable.

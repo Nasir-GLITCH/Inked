@@ -5,7 +5,9 @@ import { useEffect } from 'react';
 
 import { ConfigError, getEnv } from '@/config/env';
 import { ConfigErrorScreen } from '@/config/ConfigErrorScreen';
+import { DatabaseProvider } from '@/db/DatabaseProvider';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { FilingDraftProvider } from '@/features/editor/FilingDraftProvider';
 import { colors } from '@/theme';
 
 // Keep the splash screen up until we know whether a stored session exists.
@@ -52,6 +54,9 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="ocr-lab" />
+        <Stack.Screen name="editor" />
+        <Stack.Screen name="filing" />
+        <Stack.Screen name="note/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)/sign-in" />
@@ -74,7 +79,11 @@ export default function RootLayout() {
         <ConfigErrorScreen message={configProblem} />
       ) : (
         <AuthProvider>
-          <RootNavigator />
+          <DatabaseProvider>
+            <FilingDraftProvider>
+              <RootNavigator />
+            </FilingDraftProvider>
+          </DatabaseProvider>
         </AuthProvider>
       )}
     </ThemeProvider>

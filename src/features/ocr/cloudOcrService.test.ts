@@ -15,6 +15,10 @@ let mockFileSize: number | null = 1000;
 jest.mock('@/services/supabase', () => ({
   getSupabase: () => ({ functions: { invoke: (...args: unknown[]) => mockInvoke(...args) } }),
 }));
+const mockPrepare = jest.fn();
+jest.mock('@/features/capture/imagePrep', () => ({
+  prepareImageForUpload: (uri: string) => mockPrepare(uri),
+}));
 jest.mock('expo-file-system', () => ({
   File: class {
     get size() {
@@ -40,6 +44,7 @@ describe('recognizeTextInCloud', () => {
     mockInvoke.mockReset();
     mockBase64.mockReset().mockResolvedValue('AAAA');
     mockFileSize = 1000;
+    mockPrepare.mockReset().mockImplementation(async (uri: string) => uri);
   });
 
   it('sends the image and returns the transcription', async () => {
@@ -54,6 +59,21 @@ describe('recognizeTextInCloud', () => {
       model: 'gemini-x',
       durationMs: 900,
     });
+    expect(mockInvoke).toHaveBeenCalledWith('ocr-cloud', {
+      body: { imageBase64: 'AAAA', mimeType: 'image/jpeg' },
+    });
+  });
+
+  it('uploads the shrunken copy, not the original', async () => {
+    mockPrepare.mockResolvedValue('file:///cache/small.jpg');
+    mockInvoke.mockResolvedValue({
+      data: { text: 'Hi', model: 'm', durationMs: 1 },
+      error: null,
+    });
+
+    await recognizeTextInCloud('file:///photo.png');
+
+    expect(mockPrepare).toHaveBeenCalledWith('file:///photo.png');
     expect(mockInvoke).toHaveBeenCalledWith('ocr-cloud', {
       body: { imageBase64: 'AAAA', mimeType: 'image/jpeg' },
     });

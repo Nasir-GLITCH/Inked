@@ -96,3 +96,26 @@ Profile screen: only the identity header, Sign out and Delete account are built 
 - **Open:** engine choice and the cost/privacy trade-off, pending the owner's side-by-side results.
 
 **Result of the first comparison (owner, 2026-11-08):** cloud accuracy on handwriting was good and clearly better than on-device. `gemini-3.8-flash` timed out on every request (two 30 s attempts, confirmed in the function logs), and the results came from the fallback `gemini-3.1-flash-lite` (about 5 s of model time). Server time per page was about 65 s because of the timeouts; the default model is now the lite one. Remaining latency work: downscale and compress images before upload (the photos were 3 to 4 MB), and show the on-device text immediately while the cloud text improves it in the background.
+
+## ADR-017 — Capture-to-note loop: local-first storage and draft handling
+
+- **Storage:** notes, categories and tags are saved in an on-device SQLite database (`expo-sqlite`), one file per signed-in user (`inked-<userId>.db`) so accounts on one phone never see each other's notes. Schema changes are versioned migrations (`PRAGMA user_version`), each run in a transaction. Notes go to the server later (sync milestone); until then **deleting the app deletes the notes**. The owner approved "on the phone first, sync after".
+- **Page images** are copied from the scanner's cache into app storage (`pages/<userId>/<noteId>.<ext>`) when a note is saved, and removed again if the database write fails or the note is deleted.
+- **Draft merging:** on-device text appears immediately and cloud text (ADR-016) replaces it when it arrives, unless the user has already edited, in which case the cloud text is offered ("Use cloud text") and never applied silently. A late on-device result never replaces cloud text. An empty cloud result is ignored. Rules live in `draftReducer.ts` and are unit-tested.
+- **Confidence display:** the cloud engine returns no score, so cloud text shows the badge **CLOUD TEXT** and never a percentage. A percentage is shown only for on-device text, where it is ML Kit's real estimate (owner's choice: "hide % for cloud text").
+- **Privacy:** the Capture screen states that the page image is also sent to Google for cloud reading.
+- **No categories are pre-created.** The first filing prompts the user to create one.
+- **Known gaps:** no edit of a saved note, no search, no category rename/delete, no sync, no export. Deleting an account does not yet remove the local database or page images.
+
+### Design deviations in the capture loop (pending owner approval, as with ADR-014)
+
+| Design element                                      | Built as                          | Reason                                                                   |
+| --------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------ |
+| Live camera view on Capture                         | Google document scanner + gallery | Custom camera screen is planned; owner approved scanner first            |
+| Editor: Quick Markup, sliders icon                  | Omitted                           | No function behind them yet                                              |
+| Editor: "Synced" indicator, "Neural Engine v4"/LIVE | Omitted                           | Nothing is synced; labels would be untrue                                |
+| Editor: confidence % on every page                  | "CLOUD TEXT" badge for cloud text | Cloud engine gives no score; a made-up % would be false                  |
+| Filing: AI summary toggle, Nook/e-reader card       | Omitted                           | AI synthesis is a later milestone; e-reader features were dropped        |
+| Filing: filing preferences                          | "Pin to home" only                | The only preference with a working effect today                          |
+| Tab bar on Editor and Filing                        | Hidden (pushed full-screen)       | Keeps the two-step flow focused; back arrow returns to the previous step |
+| Notes tab: single reader card with pagination       | Library-style list of note cards  | Gives a way to see and open every saved note; reader comes later         |

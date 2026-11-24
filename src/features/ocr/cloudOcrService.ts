@@ -2,6 +2,7 @@ import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 import { File } from 'expo-file-system';
 import { z } from 'zod';
 
+import { prepareImageForUpload } from '@/features/capture/imagePrep';
 import { getSupabase } from '@/services/supabase';
 
 export type CloudFailureCode =
@@ -51,8 +52,10 @@ async function failureFromError(error: unknown): Promise<CloudFailureCode> {
 /** Transcribes a local image with the cloud engine (Gemini, via an edge function). Never throws. */
 export async function recognizeTextInCloud(imageUri: string): Promise<CloudOcrResult> {
   let imageBase64: string;
+  // Upload a smaller copy: photos are often 3 to 4 MB, which is slow on mobile data.
+  const uploadUri = await prepareImageForUpload(imageUri);
   try {
-    const file = new File(imageUri);
+    const file = new File(uploadUri);
     if ((file.size ?? 0) > MAX_UPLOAD_BYTES) return { ok: false, code: 'image_too_large' };
     imageBase64 = await file.base64();
   } catch {
@@ -61,7 +64,7 @@ export async function recognizeTextInCloud(imageUri: string): Promise<CloudOcrRe
 
   try {
     const { data, error } = await getSupabase().functions.invoke('ocr-cloud', {
-      body: { imageBase64, mimeType: mimeTypeFor(imageUri) },
+      body: { imageBase64, mimeType: mimeTypeFor(uploadUri) },
     });
     if (error) return { ok: false, code: await failureFromError(error) };
     const parsed = responseSchema.safeParse(data);

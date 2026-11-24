@@ -62,7 +62,8 @@ iOS builds need a paid Apple Developer account and cannot be built locally on Wi
 ```
 src/
   app/            Expo Router routes only. Files here must stay thin re-exports (every file is a route).
-  features/       One folder per feature (auth, profile, ...); screens, hooks, services live together.
+  features/       One folder per feature (auth, capture, editor, filing, notes, ocr, profile); screens, hooks, services live together.
+  db/             On-device SQLite: migrations, repositories, per-user database provider.
   services/       Shared integrations (Supabase client, secure session storage).
   config/         Environment parsing and the setup-error screen.
   components/     ui/ (primitives) and layout/ (screen scaffolding).
@@ -85,8 +86,9 @@ The Capture tab shows an **Open OCR lab** button in development builds. It scans
 
 ## Known limitations
 
-- The OCR native module (`modules/inked-ocr`) and scanner plugin are unit-tested only through mocks; the Kotlin code has not been compiled or run yet.
-- Notes, Capture, Sticky and Library are honest empty states; only accounts are wired to the backend.
+- The OCR native module (`modules/inked-ocr`) was built and run on the owner's device through the OCR lab; the scanner, SQLite, image-resize and the editor/filing screens have only been tested through mocks and in-memory SQLite.
+- The capture loop (scan or import, edit text, file, save, list, open, delete) is built and unit-tested but **not yet run on a device**. Notes are stored only on the phone (SQLite) until sync is built, so uninstalling the app loses them. Sticky and Library are still empty states. See ADR-017.
+- Cloud reading sends the page image to Google (Gemini). The `ocr-cloud` function has no per-user quota yet; it must get one before public release.
 - No password reset, Google sign-in or biometric app lock yet (see ADR-014). Password reset must be built before launch.
 - Supabase's built-in email sender is heavily rate-limited; use a custom SMTP provider before real users sign up.
 - Not yet verified on a physical device or emulator (only unit/component tests and a production Android bundle export in a headless environment). Checklist: [docs/DEVICE_CHECKLIST.md](docs/DEVICE_CHECKLIST.md).
